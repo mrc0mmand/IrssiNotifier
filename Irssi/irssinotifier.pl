@@ -265,10 +265,16 @@ sub send_to_api {
             my $wget_cmd = "wget --tries=2 --timeout=10 --no-check-certificate -qO- /dev/null";
             my $api_url;
             my $data;
-            		
-			if (Irssi::settings_get_str('irssinotifier_enable_network_tag')) {
-				$lastNick = "$lastNick on $lastTag"
-				}
+
+            if(Irssi::settings_get_str('irssinotifier_enable_network_tag')) {
+                if($lastTarget eq "!PRIVATE") {
+                    # Query message
+                    $lastTarget = "$lastNick on $lastTag";
+                } else {
+                    # Channel message
+                    $lastTarget = "$lastTarget on $lastTag";
+                }
+            }
 
             if ($type eq 'notification') {
                 $lastMsg = Irssi::strip_codes($lastMsg);
