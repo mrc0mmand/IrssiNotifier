@@ -262,7 +262,7 @@ sub send_to_api {
                 $ENV{https_proxy} = $proxy;
             }
 
-            my $wget_cmd = "wget --tries=2 --timeout=10 --no-check-certificate -qO- /dev/null";
+            my $wget_cmd = "wget --tries=2 --timeout=10 --no-check-certificate -qO /dev/null";
             my $api_url;
             my $data;
 
@@ -340,11 +340,7 @@ sub read_pipe {
     my $ret = $1;
     $output = $2;
 
-    if ($ret < 0) {
-        Irssi::print($IRSSI{name} . ": Error: send crashed: $output");
-    } elsif (!$ret) {
-        #Irssi::print($IRSSI{name} . ": Error: send failed: $output");
-    }
+    Irssi::print($IRSSI{name} . ": RC: $ret, status: $output");
 
     if (Irssi::settings_get_bool('irssinotifier_clear_notifications_when_viewed') && $target->{type} eq 'notification') {
         $notifications_sent++;
