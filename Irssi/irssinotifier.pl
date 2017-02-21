@@ -262,7 +262,7 @@ sub send_to_api {
                 $ENV{https_proxy} = $proxy;
             }
 
-            my $wget_cmd = "wget --tries=2 --timeout=10 --no-check-certificate -qO- /dev/null";
+            my $wget_cmd = "wget --tries=2 --timeout=10 --no-check-certificate -qO /dev/null";
             my $api_url;
             my $data;
 
