@@ -35,6 +35,7 @@ my $forked;
 my $lastDcc = 0;
 my $notifications_sent = 0;
 my @delayQueue = ();
+my $lastTag;
 
 my $screen_socket_path;
 
@@ -46,6 +47,7 @@ sub private {
     $lastTarget  = "!PRIVATE";
     $lastWindow  = $nick;
     $lastDcc = 0;
+    $lastTag = $server->{tag};
 }
 
 sub joined {
@@ -66,6 +68,7 @@ sub public {
     $lastTarget  = $target;
     $lastWindow  = $target;
     $lastDcc = 0;
+    $lastTag = $server->{tag};
 }
 
 sub dcc {
@@ -74,7 +77,7 @@ sub dcc {
     $lastMsg     = $msg;
     $lastNick    = $dcc->{nick};
     $lastTarget  = "!PRIVATE";
-    $lastWindow  = $dcc->{target};
+    $lastWindow  = $dcc->{tag};
     $lastDcc = 1;
 }
 
@@ -278,6 +281,16 @@ sub send_to_api {
             my $wget_cmd = "wget --tries=2 --timeout=10 --no-check-certificate -qO- /dev/null";
             my $api_url;
             my $data;
+
+            if(Irssi::settings_get_str('irssinotifier_enable_network_tag')) {
+                if($lastTarget eq "!PRIVATE") {
+                    # Query message
+                    $lastTarget = "$lastNick on $lastTag";
+                } else {
+                    # Channel message
+                    $lastTarget = "$lastTarget on $lastTag";
+                }
+            }
 
             if ($type eq 'notification') {
                 $lastMsg = Irssi::strip_codes($lastMsg);
@@ -504,6 +517,7 @@ Irssi::settings_add_bool('irssinotifier', 'irssinotifier_screen_detached_only', 
 Irssi::settings_add_bool('irssinotifier', 'irssinotifier_clear_notifications_when_viewed', 0);
 Irssi::settings_add_int('irssinotifier', 'irssinotifier_require_idle_seconds', 0);
 Irssi::settings_add_bool('irssinotifier', 'irssinotifier_enable_dcc', 1);
+Irssi::settings_add_bool('irssinotifier', 'irssinotifier_enable_network_tag', 0);
 
 # these commands are renamed
 Irssi::settings_remove('irssinotifier_ignore_server');
