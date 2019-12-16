@@ -12,6 +12,9 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
+import android.util.Log;
+
+import com.google.firebase.iid.FirebaseInstanceId;
 
 /**
  * Default settings are actually stored in preference_screen.xml :(
@@ -69,7 +72,7 @@ public class Preferences {
 
         return editor.commit();
     }
-    
+
     public int getGcmRegistrationIdVersion() {
         return sharedPreferences.getInt(GCM_REGISTRATION_ID_VERSION_KEY, 0);
     }
@@ -144,14 +147,11 @@ public class Preferences {
     }
 
 	public boolean isSpamFilterEnabled() {
-		long time = Long.parseLong(sharedPreferences.getString(
-				SPAM_FILTER_TIME, "-1"));
-		return time >= 0;
+		return getSpamFilterTime() >= 0;
     }
 
 	public long getSpamFilterTime() {
-		return Long.parseLong(sharedPreferences.getString(SPAM_FILTER_TIME,
-				"-1"));
+		return Long.parseLong(sharedPreferences.getString(SPAM_FILTER_TIME, "60"));
     }
 
     public boolean isNotificationsEnabled() {
@@ -253,6 +253,6 @@ public class Preferences {
     }
 
     public boolean isPebbleEnabled() {
-        return sharedPreferences.getBoolean(PEBBLE_ENABLED, true);
+        return sharedPreferences.getBoolean(PEBBLE_ENABLED, false);
     }
 }

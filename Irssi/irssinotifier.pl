@@ -83,19 +83,25 @@ sub dcc {
 sub print_text {
     my ($dest, $text, $stripped) = @_;
 
-    # We only need to check that it's a dcc, hilight, or privmsg
-    # before checking whether we need to send.
-    my $opt = MSGLEVEL_HILIGHT | MSGLEVEL_MSGS;
-    if ($lastDcc || (($dest->{level} & $opt) &&
-                     ($dest->{level} & MSGLEVEL_NOHILIGHT) == 0)) {
-        if (should_send_notification($dest)) {
-            send_notification();
-        }
+    if (!defined $lastMsg || index($text, $lastMsg) == -1)
+    {
+        # text doesn't contain the message, so printed text is about something else and notification doesn't need to be sent
+        return;
+    }
+
+    if (should_send_notification($dest))
+    {
+        send_notification();
     }
 }
 
 sub should_send_notification {
     my $dest = @_ ? shift : $_;
+
+    my $opt = MSGLEVEL_HILIGHT | MSGLEVEL_MSGS;
+    if (!$lastDcc && (!($dest->{level} & $opt) || ($dest->{level} & MSGLEVEL_NOHILIGHT))) {
+        return 0; # not a hilight and not a dcc message
+    }
 
     if (!are_settings_valid()) {
         return 0; # invalid settings
@@ -164,6 +170,15 @@ sub should_send_notification {
     if ($required_public_highlight_pattern_string ne '' && ($dest->{level} & MSGLEVEL_PUBLIC)) {
         my @required_patterns = split(/ /, $required_public_highlight_pattern_string);
         if (!(grep { $lastMsg =~ /$_/i } @required_patterns)) {
+            return 0; # Required pattern not matched
+        }
+    }
+
+    # If specified, require a channel name to be matched before sending
+    my $irssinotifier_required_channel_patterns = Irssi::settings_get_str("irssinotifier_required_channel_patterns");
+    if ($irssinotifier_required_channel_patterns ne '' && ($dest->{level} & MSGLEVEL_PUBLIC)) {
+        my @required_patterns = split(/ /, $irssinotifier_required_channel_patterns);
+        if (!(grep { $lastWindow =~ /$_/i } @required_patterns)) {
             return 0; # Required pattern not matched
         }
     }
@@ -364,8 +379,12 @@ sub encrypt {
     my $flags = fcntl($r, F_GETFD, 0) or die "fcntl F_GETFD: $!";
     fcntl($r, F_SETFD, $flags & ~FD_CLOEXEC) or die "fcntl F_SETFD: $!";
 
+    # preserve STDERR
+    open (OLDER, ">&", \*STDERR) || warn "Can't preserve STDERR\n$!\n";
+    close STDERR;
+
     my $rfn = fileno($r);
-    my $pid = open2(my $out, my $in, qw(openssl enc -aes-128-cbc -salt -base64 -A -pass), "fd:$rfn");
+    my $pid = open2(my $out, my $in, qw(openssl enc -aes-128-cbc -salt -base64 -md md5 -A -pass), "fd:$rfn");
 
     print $w "$password";
     close $w;
@@ -377,6 +396,10 @@ sub encrypt {
 
     waitpid $pid, 0;
     close $r;
+
+    # restore STDERR
+    open (STDERR, ">&", \*OLDER) || warn "Can't restore STDERR\n$!\n";
+    close OLDER;
 
     $result =~ tr[+/][-_];
     $result =~ s/=//g;
@@ -470,7 +493,7 @@ sub event_key_pressed {
 if (defined($ENV{STY})) {
     my $screen_ls = `LC_ALL="C" screen -ls 2> /dev/null`;
     if ($screen_ls !~ /^No Sockets found/s) {
-        $screen_ls =~ /^.+\d+ Sockets? in ([^\n]+)\.\n.+$/s;
+        $screen_ls =~ /^.*\d+ Sockets? in ([^\n]+)\..*$/sm;
         $screen_socket_path = $1;
     } else {
         $screen_ls =~ /^No Sockets found in ([^\n]+)\.\n.+$/s;
@@ -548,6 +571,7 @@ Irssi::settings_add_str('irssinotifier', 'irssinotifier_ignored_channels', '');
 Irssi::settings_add_str('irssinotifier', 'irssinotifier_ignored_nicks', '');
 Irssi::settings_add_str('irssinotifier', 'irssinotifier_ignored_highlight_patterns', '');
 Irssi::settings_add_str('irssinotifier', 'irssinotifier_required_public_highlight_patterns', '');
+Irssi::settings_add_str('irssinotifier', 'irssinotifier_required_channel_patterns', '');
 Irssi::settings_add_bool('irssinotifier', 'irssinotifier_ignore_active_window', 0);
 Irssi::settings_add_bool('irssinotifier', 'irssinotifier_away_only', 0);
 Irssi::settings_add_bool('irssinotifier', 'irssinotifier_screen_detached_only', 0);

@@ -14,7 +14,7 @@ import json
 jinja_environment = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.dirname(__file__)))
 MinAndroidVersion = 8
 MinScriptVersion = 2
-LatestScriptVersion = 20
+LatestScriptVersion = 24
 
 
 def getAndroidServerMessage(data):
@@ -278,6 +278,8 @@ class WipeController(BaseController):
 
 class AdminController(BaseController):
     def get(self):
+        from gcm import GCM
+        GCM.authkey = None
         self.redirect('https://appengine.google.com/dashboard?&app_id=s~irssinotifier')
 
 

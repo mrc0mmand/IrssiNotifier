@@ -9,7 +9,7 @@ use POSIX;
 use Encode;
 use vars qw($VERSION %IRSSI);
 
-$VERSION = "20";
+$VERSION = "24";
 %IRSSI   = (
     authors     => "Lauri \'murgo\' Härsilä",
     contact     => "murgo\@iki.fi",
@@ -17,7 +17,7 @@ $VERSION = "20";
     description => "Send notifications about irssi highlights to server",
     license     => "Apache License, version 2.0",
     url         => "https://irssinotifier.appspot.com",
-    changed     => "2014-04-08"
+    changed     => "2018-11-12"
 );
 
 # Sometimes, for some unknown reason, perl emits warnings like the following:
@@ -37,17 +37,6 @@ my $notifications_sent = 0;
 my @delayQueue = ();
 
 my $screen_socket_path;
-
-if (defined($ENV{STY})) {
-    my $screen_ls = `LC_ALL="C" screen -ls 2> /dev/null`;
-    if ($screen_ls !~ /^No Sockets found/s) {
-        $screen_ls =~ /^.+\d+ Sockets? in ([^\n]+)\.\n.+$/s;
-        $screen_socket_path = $1;
-    } else {
-        $screen_ls =~ /^No Sockets found in ([^\n]+)\.\n.+$/s;
-        $screen_socket_path = $1;
-    }
-}
 
 sub private {
     my ( $server, $msg, $nick, $address ) = @_;
@@ -179,6 +168,15 @@ sub should_send_notification {
     if ($required_public_highlight_pattern_string ne '' && ($dest->{level} & MSGLEVEL_PUBLIC)) {
         my @required_patterns = split(/ /, $required_public_highlight_pattern_string);
         if (!(grep { $lastMsg =~ /$_/i } @required_patterns)) {
+            return 0; # Required pattern not matched
+        }
+    }
+
+    # If specified, require a channel name to be matched before sending
+    my $irssinotifier_required_channel_patterns = Irssi::settings_get_str("irssinotifier_required_channel_patterns");
+    if ($irssinotifier_required_channel_patterns ne '' && ($dest->{level} & MSGLEVEL_PUBLIC)) {
+        my @required_patterns = split(/ /, $irssinotifier_required_channel_patterns);
+        if (!(grep { $lastWindow =~ /$_/i } @required_patterns)) {
             return 0; # Required pattern not matched
         }
     }
@@ -369,8 +367,12 @@ sub encrypt {
     my $flags = fcntl($r, F_GETFD, 0) or die "fcntl F_GETFD: $!";
     fcntl($r, F_SETFD, $flags & ~FD_CLOEXEC) or die "fcntl F_SETFD: $!";
 
+    # preserve STDERR
+    open (OLDER, ">&", \*STDERR) || warn "Can't preserve STDERR\n$!\n";
+    close STDERR;
+
     my $rfn = fileno($r);
-    my $pid = open2(my $out, my $in, qw(openssl enc -aes-128-cbc -salt -base64 -A -pass), "fd:$rfn");
+    my $pid = open2(my $out, my $in, qw(openssl enc -aes-128-cbc -salt -base64 -md md5 -A -pass), "fd:$rfn");
 
     print $w "$password";
     close $w;
@@ -382,6 +384,10 @@ sub encrypt {
 
     waitpid $pid, 0;
     close $r;
+
+    # restore STDERR
+    open (STDERR, ">&", \*OLDER) || warn "Can't restore STDERR\n$!\n";
+    close OLDER;
 
     $result =~ tr[+/][-_];
     $result =~ s/=//g;
@@ -472,6 +478,17 @@ sub event_key_pressed {
     $lastKeyboardActivity = time;
 }
 
+if (defined($ENV{STY})) {
+    my $screen_ls = `LC_ALL="C" screen -ls 2> /dev/null`;
+    if ($screen_ls !~ /^No Sockets found/s) {
+        $screen_ls =~ /^.*\d+ Sockets? in ([^\n]+)\..*$/sm;
+        $screen_socket_path = $1;
+    } else {
+        $screen_ls =~ /^No Sockets found in ([^\n]+)\.\n.+$/s;
+        $screen_socket_path = $1;
+    }
+}
+
 Irssi::settings_add_str('irssinotifier', 'irssinotifier_encryption_password', 'password');
 Irssi::settings_add_str('irssinotifier', 'irssinotifier_api_token', '');
 Irssi::settings_add_str('irssinotifier', 'irssinotifier_https_proxy', '');
@@ -480,6 +497,7 @@ Irssi::settings_add_str('irssinotifier', 'irssinotifier_ignored_channels', '');
 Irssi::settings_add_str('irssinotifier', 'irssinotifier_ignored_nicks', '');
 Irssi::settings_add_str('irssinotifier', 'irssinotifier_ignored_highlight_patterns', '');
 Irssi::settings_add_str('irssinotifier', 'irssinotifier_required_public_highlight_patterns', '');
+Irssi::settings_add_str('irssinotifier', 'irssinotifier_required_channel_patterns', '');
 Irssi::settings_add_bool('irssinotifier', 'irssinotifier_ignore_active_window', 0);
 Irssi::settings_add_bool('irssinotifier', 'irssinotifier_away_only', 0);
 Irssi::settings_add_bool('irssinotifier', 'irssinotifier_screen_detached_only', 0);

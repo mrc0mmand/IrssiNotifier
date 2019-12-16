@@ -10,11 +10,7 @@ import android.net.Uri;
 import android.os.Vibrator;
 import org.apache.http.auth.AuthenticationException;
 
-import com.actionbarsherlock.app.SherlockActivity;
 import com.viewpagerindicator.TitlePageIndicator;
-import com.actionbarsherlock.view.Menu;
-import com.actionbarsherlock.view.MenuItem;
-import com.actionbarsherlock.view.Window;
 
 import android.content.Context;
 import android.content.Intent;
@@ -22,9 +18,14 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Bundle;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.Window;
 
-public class IrssiNotifierActivity extends SherlockActivity {
+public class IrssiNotifierActivity extends AppCompatActivity {
     public static final String FEED = "------------------------FEED";
 
     private static final String TAG = IrssiNotifierActivity.class.getName();
@@ -72,6 +73,17 @@ public class IrssiNotifierActivity extends SherlockActivity {
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
         setIndeterminateProgressBarVisibility(false);
 
+        // set action Bar icon & Text. Apparently this is no longer a good practice but I'm too lazy to do UI redesign now.
+        // See https://stackoverflow.com/questions/26838730/the-application-icon-does-not-show-on-action-bar
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setDisplayOptions(ActionBar.DISPLAY_SHOW_TITLE | ActionBar.DISPLAY_SHOW_CUSTOM | ActionBar.DISPLAY_SHOW_HOME | ActionBar.DISPLAY_USE_LOGO);
+            actionBar.setLogo(R.mipmap.ic_actionbar);
+            //actionBar.setDisplayUseLogoEnabled(true);
+            //actionBar.setDisplayShowTitleEnabled(true);
+            //actionBar.setDisplayShowHomeEnabled(true);
+        }
+
         Intent i = getIntent();
         if (i != null) {
             String intentChannelToView = i.getStringExtra("Channel");
@@ -84,6 +96,8 @@ public class IrssiNotifierActivity extends SherlockActivity {
             b = savedInstanceState.getBoolean("rotated", false);
             channelToView = savedInstanceState.getString("channelToView");
         }
+
+        NotificationChannelCreator.createNotificationChannels(this);
 
         IrcNotificationManager.getInstance().mainActivityOpened(this);
         startMainApp(b);
@@ -353,7 +367,8 @@ public class IrssiNotifierActivity extends SherlockActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
-        getSupportMenuInflater().inflate(R.menu.mainmenu, menu);
+
+        getMenuInflater().inflate(R.menu.mainmenu, menu);
 
         if (!preferences.getIcbEnabled() || !IntentSniffer.isPackageAvailable(this, IrssiConnectbotLauncher.PACKAGE_IRSSICONNECTBOT)) {
             menu.findItem(R.id.menu_irssi_connectbot).setVisible(false);

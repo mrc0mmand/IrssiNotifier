@@ -150,9 +150,10 @@ public class IrcNotificationManager {
             }
         }
 
-		if ((!prefs.isSpamFilterEnabled() || new Date().getTime() > IrcNotificationManager
-				.getInstance().getLastSoundDate()
-				+ (1000L * prefs.getSpamFilterTime()))) {
+		if ((!prefs.isSpamFilterEnabled() || new Date().getTime() > IrcNotificationManager.getInstance().getLastSoundDate() + (1000L * prefs.getSpamFilterTime()))) {
+            // no spam filter going on
+
+            // legacy, this stuff affects only pre-android 8 phones
             if (prefs.isSoundEnabled()) {
                 builder.setSound(prefs.getNotificationSound());
             }
@@ -162,6 +163,9 @@ public class IrcNotificationManager {
             }
 
             lastSoundDate = new Date().getTime();
+            builder.setChannelId(NotificationChannelCreator.CHANNEL_DEFAULT_ID);
+        } else {
+            builder.setChannelId(NotificationChannelCreator.CHANNEL_LOWPRIO_ID);
         }
 
         builder.setDefaults(defaults);

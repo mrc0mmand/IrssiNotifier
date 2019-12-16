@@ -1,20 +1,23 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 15
-    buildToolsVersion "23.0.2"
+    compileSdkVersion 27
+    buildToolsVersion "28.0.3"
 
     defaultConfig {
         applicationId "fi.iki.murgo.irssinotifier"
-        minSdkVersion 9
-        targetSdkVersion 15
-        versionCode 15
-        versionName "1.8.0"
+        minSdkVersion 14
+        targetSdkVersion 27
+        versionCode 18
+        versionName "1.9.2"
     }
+    flavorDimensions "version"
     productFlavors {
         free {
+            dimension "version"
         }
         pro {
+            dimension "version"
             applicationId "fi.iki.murgo.irssinotifier.plus"
         }
     }
@@ -24,19 +27,24 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    useLibrary 'org.apache.http.legacy'
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
     //wearApp project(':wear')
-    testCompile 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.12'
 
-    compile files('libs/gcm.jar')
+    implementation 'com.google.firebase:firebase-core:16.0.5'
+    implementation 'com.google.firebase:firebase-messaging:17.3.4'
 
-    compile 'com.github.yukuku:ambilwarna:2.0.1'
-    compile 'fr.avianey.com.viewpagerindicator:library:2.4.1.1@aar'
-    compile 'asia.ivity.android:drag-sort-listview:1.0'
+    implementation 'com.github.yukuku:ambilwarna:2.0.1'
+    implementation 'fr.avianey.com.viewpagerindicator:library:2.4.1.1@aar'
+    implementation 'asia.ivity.android:drag-sort-listview:1.0'
 
-    compile 'com.actionbarsherlock:actionbarsherlock:4.4.0@aar'
-    compile 'com.android.support:support-v4:18.0.0'
+    implementation "com.android.support:appcompat-v7:27.1.1"
+    implementation 'com.android.support:support-v4:27.1.1'
 }
+
+apply plugin: 'com.google.gms.google-services'
