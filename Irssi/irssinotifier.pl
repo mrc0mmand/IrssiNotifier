@@ -8,7 +8,7 @@ use Fcntl;
 use POSIX;
 use Encode;
 use vars qw($VERSION %IRSSI);
-$VERSION = "21";
+$VERSION = "24.1";
 %IRSSI   = (
     authors     => "Lauri \'murgo\' Härsilä",
     contact     => "murgo\@iki.fi",
@@ -16,7 +16,7 @@ $VERSION = "21";
     description => "Send notifications about irssi highlights to server",
     license     => "Apache License, version 2.0",
     url         => "https://irssinotifier.appspot.com",
-    changed     => "2017-01-23"
+    changed     => "2019-12-16"
 );
 
 # Sometimes, for some unknown reason, perl emits warnings like the following:
